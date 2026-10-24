@@ -1,0 +1,1304 @@
+```html
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MeloClips</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Comfortaa:wght@600&family=Inter:wght@300;400;600;700&family=Merriweather:ital@0;1&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #f1f5f9;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Custom Font Dynamic Classes */
+        .font-sans-custom { font-family: 'Inter', sans-serif; }
+        .font-serif-custom { font-family: 'Merriweather', serif; }
+        .font-mono-custom { font-family: monospace; }
+        .font-futuristic-custom { font-family: 'Space Grotesk', sans-serif; }
+        .font-bubble-custom { font-family: 'Comfortaa', cursive; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #06b6d4;
+        }
+
+        .aspect-video-custom {
+            aspect-ratio: 16 / 9;
+        }
+
+        /* Modal Overlay Animations */
+        .modal-blur {
+            backdrop-filter: blur(8px);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- MAIN HEADER -->
+    <header class="border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('clips')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-cyan-500/20">
+                    <i class="fa-solid font-bold fa-play text-slate-950"></i>
+                </div>
+                <span class="text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-500">
+                    MELOCLIPS
+                </span>
+            </div>
+
+            <!-- Header Right Section: User Profile Badge & Admin Indicator -->
+            <div class="flex items-center gap-3">
+                <div id="adminBadge" class="hidden items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-full text-xs font-semibold">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <span>Yönetici Modu</span>
+                </div>
+
+                <div id="userProfileBadge" class="flex items-center gap-2 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 p-1.5 pr-3 rounded-full cursor-pointer transition" onclick="openAuthModal()">
+                    <img id="navAvatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Guest" class="w-7 h-7 rounded-full bg-slate-700 object-cover" alt="User Avatar">
+                    <span id="navUsername" class="text-xs font-medium text-slate-300">Giriş Yap</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="border-t border-slate-800/50 bg-slate-950/40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-2 overflow-x-auto py-2">
+                <button id="tabBtn-clips" onclick="switchTab('clips')" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2 bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                    <i class="fa-solid fa-film"></i>
+                    <span>Tüm Klipler</span>
+                </button>
+                <button id="tabBtn-downloads" onclick="switchTab('downloads')" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 transition flex items-center gap-2">
+                    <i class="fa-solid fa-download"></i>
+                    <span>İndirilenler</span>
+                    <span id="downloadCountBadge" class="ml-1 px-2 py-0.5 text-xs bg-slate-800 text-slate-300 rounded-full border border-slate-700">0</span>
+                </button>
+                <button id="tabBtn-about" onclick="switchTab('about')" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 transition flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>Duyuru / Hakkında</span>
+                </button>
+                <button id="tabBtn-admin" onclick="switchTab('admin')" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 transition flex items-center gap-2 ml-auto">
+                    <i class="fa-solid fa-user-gear"></i>
+                    <span id="tabAdminText">Yönetici Girişi</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- ANNOUNCEMENT BANNER -->
+    <div id="announcementBanner" class="border-b border-slate-800 bg-slate-900/60 py-3 px-4 transition-all duration-300">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            <div id="announcementContent" class="flex-1 text-center sm:text-left text-sm text-slate-300 font-sans-custom">
+                <!-- Dynamic announcement text populated via JS -->
+            </div>
+            <button id="adminBannerEditBtn" onclick="openAnnouncementEditor()" class="hidden px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 rounded-lg text-xs font-semibold items-center gap-1.5 transition">
+                <i class="fa-solid fa-pen-to-square"></i>
+                <span>Duyuruyu Düzenle</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+
+        <!-- TAB 1: ALL CLIPS -->
+        <section id="tabContent-clips" class="space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-white tracking-wide">Öne Çıkan Klipler</h1>
+                    <p class="text-xs text-slate-400 mt-1">Sizler için hazırlanan en yeni popüler videolar</p>
+                </div>
+                <!-- Admin Action Button -->
+                <button id="adminUploadBtn" onclick="openUploadModal()" class="hidden px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold rounded-xl text-sm shadow-lg shadow-cyan-500/20 transition items-center gap-2">
+                    <i class="fa-solid fa-plus text-base"></i>
+                    <span>Yeni Klip Yükle</span>
+                </button>
+            </div>
+
+            <!-- Video Grid -->
+            <div id="videoGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- Dynamic clip cards populated here -->
+            </div>
+
+            <!-- Empty State for Video Grid -->
+            <div id="emptyVideoState" class="hidden flex-col items-center justify-center py-20 text-center border-2 border-dashed border-slate-800 rounded-3xl">
+                <div class="w-16 h-16 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-600 text-2xl mb-4">
+                    <i class="fa-solid fa-video"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-300">Henüz Klip Bulunmuyor</h3>
+                <p class="text-xs text-slate-500 max-w-sm mt-1">Yönetici paneline giriş yaparak ilk klibi hemen yükleyebilirsiniz.</p>
+            </div>
+        </section>
+
+        <!-- TAB 2: DOWNLOADED CLIPS -->
+        <section id="tabContent-downloads" class="hidden space-y-6">
+            <div class="border-b border-slate-800 pb-4">
+                <h1 class="text-2xl font-bold text-white tracking-wide">İndirilen Kliplerim</h1>
+                <p class="text-xs text-slate-400 mt-1">Hesabınıza kaydedilmiş ve indirdiğiniz kliplerinizin geçmişi</p>
+            </div>
+
+            <!-- Downloaded Clips Grid -->
+            <div id="downloadsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- Dynamic downloaded clips -->
+            </div>
+
+            <!-- Guest / Empty State -->
+            <div id="downloadsEmptyState" class="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-slate-800 rounded-3xl">
+                <div class="w-16 h-16 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-600 text-2xl mb-4">
+                    <i class="fa-solid fa-cloud-arrow-down"></i>
+                </div>
+                <h3 id="downloadsEmptyTitle" class="text-lg font-bold text-slate-300">Henüz İndirilen Klip Yok</h3>
+                <p id="downloadsEmptySub" class="text-xs text-slate-500 max-w-sm mt-1">Giriş yapıp klip indirdiğinizde videolarınız bu alanda listelenir.</p>
+                <button id="downloadsAuthBtn" onclick="openAuthModal()" class="mt-4 px-5 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl transition">
+                    Giriş Yap / Kaydol
+                </button>
+            </div>
+        </section>
+
+        <!-- TAB 3: ABOUT / ANNOUNCEMENT DETAILS -->
+        <section id="tabContent-about" class="hidden max-w-3xl mx-auto space-y-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
+                <div class="flex items-center gap-4 border-b border-slate-800 pb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-2xl">
+                        <i class="fa-solid fa-bullhorn"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-white">Platform Duyurusu & Hakkında</h2>
+                        <p class="text-xs text-slate-400">MeloClips güncel gelişmeleri ve bilgiler</p>
+                    </div>
+                </div>
+
+                <div id="aboutBannerDisplay" class="p-6 rounded-2xl border border-slate-800 bg-slate-950/60">
+                    <!-- Dynamic rendering of announcement in main view -->
+                </div>
+
+                <div class="space-y-4 pt-4 border-t border-slate-800 text-slate-400 text-sm">
+                    <h3 class="font-semibold text-slate-200 text-base">MeloClips Hakkında</h3>
+                    <p class="leading-relaxed text-xs sm:text-sm">
+                        MeloClips; yüksek kaliteli video içeriklerinin, kliplerin ve medya dosyalarının kesintisiz bir şekilde paylaşıldığı dinamik bir platformdur. Kullanıcılar içerikleri tek tıkla cihazlarına indirebilir ve kendi indirme kütüphanelerini oluşturabilirler.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: ADMIN PORTAL -->
+        <section id="tabContent-admin" class="hidden max-w-xl mx-auto space-y-6">
+            <!-- ADMIN LOGIN FORM (If not logged in as Admin) -->
+            <div id="adminLoginForm" class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
+                <div class="text-center space-y-2">
+                    <div class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-2xl mx-auto">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white">Yönetici Girişi</h2>
+                    <p class="text-xs text-slate-400">Yönetim paneline erişmek için şifrenizi girin.</p>
+                </div>
+
+                <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Yönetici Şifresi</label>
+                        <div class="relative">
+                            <input type="password" id="adminPasswordInput" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500 transition">
+                            <button type="button" onclick="togglePasswordVisibility('adminPasswordInput')" class="absolute right-3 top-3 text-slate-500 hover:text-slate-300">
+                                <i class="fa-solid fa-eye text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-bold py-3 rounded-xl transition shadow-lg shadow-amber-500/20 text-sm">
+                        Giriş Yap
+                    </button>
+                </form>
+            </div>
+
+            <!-- ADMIN DASHBOARD (If logged in as Admin) -->
+            <div id="adminDashboard" class="hidden bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-white">Yönetici Kontrol Paneli</h2>
+                            <p class="text-xs text-amber-400/80 font-medium">Tam Yetkili Oturum</p>
+                        </div>
+                    </div>
+                    <button onclick="logoutAdmin()" class="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs font-semibold transition">
+                        Çıkış Yap
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button onclick="openUploadModal()" class="p-4 bg-slate-950 hover:bg-slate-800/80 border border-slate-800 rounded-2xl text-left space-y-2 transition group">
+                        <i class="fa-solid fa-cloud-arrow-up text-cyan-400 text-xl group-hover:scale-110 transition-transform"></i>
+                        <h3 class="font-bold text-sm text-slate-200">Klip Yükle</h3>
+                        <p class="text-xs text-slate-500">Video, kapak resmi ve başlık ekleyin.</p>
+                    </button>
+
+                    <button onclick="openAnnouncementEditor()" class="p-4 bg-slate-950 hover:bg-slate-800/80 border border-slate-800 rounded-2xl text-left space-y-2 transition group">
+                        <i class="fa-solid fa-pen-nib text-amber-400 text-xl group-hover:scale-110 transition-transform"></i>
+                        <h3 class="font-bold text-sm text-slate-200">Duyuru / Font Ayarı</h3>
+                        <p class="text-xs text-slate-500">Duyuru metnini ve stilini güncelleyin.</p>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-slate-800/80 bg-slate-950 py-6">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 space-y-2">
+            <p>&copy; 2026 MeloClips - Tüm Hakları Saklıdır.</p>
+        </div>
+    </footer>
+
+    <!-- MODAL 1: VIDEO UPLOAD / EDIT MODAL -->
+    <div id="uploadModal" class="fixed inset-0 bg-slate-950/80 modal-blur z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative">
+            <button onclick="closeUploadModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                    <i class="fa-solid fa-film"></i>
+                </div>
+                <div>
+                    <h3 id="uploadModalTitle" class="text-lg font-bold text-white">Yeni Klip Yükle</h3>
+                    <p class="text-xs text-slate-400">Lütfen klip bilgilerini doldurun.</p>
+                </div>
+            </div>
+
+            <form onsubmit="handleClipFormSubmit(event)" class="space-y-4">
+                <input type="hidden" id="editClipId">
+
+                <!-- Title -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Klip Başlığı *</label>
+                    <input type="text" id="clipTitleInput" required placeholder="Örn: Efsane Gol Anı" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 transition">
+                </div>
+
+                <!-- Cover Image (Thumbnail) -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Kapak Fotoğrafı (Thumbnail) *</label>
+                    <input type="file" id="clipCoverInput" accept="image/*" class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-cyan-500/10 file:text-cyan-400 hover:file:bg-cyan-500/20 cursor-pointer">
+                    <p id="editCoverHelp" class="hidden text-[10px] text-amber-400/80 mt-1">Düzenleme sırasında yeni kapak seçmezseniz mevcuttaki korunur.</p>
+                </div>
+
+                <!-- Video File -->
+                <div id="videoFileInputGroup">
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Video Dosyası *</label>
+                    <input type="file" id="clipVideoInput" accept="video/*" class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-cyan-500/10 file:text-cyan-400 hover:file:bg-cyan-500/20 cursor-pointer">
+                </div>
+
+                <!-- Progress Bar -->
+                <div id="uploadProgressContainer" class="hidden space-y-1">
+                    <div class="flex justify-between text-xs text-slate-400">
+                        <span>Yükleniyor...</span>
+                        <span id="uploadProgressText">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
+                        <div id="uploadProgressBar" class="bg-cyan-500 h-full w-0 transition-all duration-200"></div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeUploadModal()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition">
+                        İptal
+                    </button>
+                    <button type="submit" id="saveClipBtn" class="px-5 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg shadow-cyan-500/20">
+                        Kaydet ve Yayınla
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: ANNOUNCEMENT EDITOR MODAL -->
+    <div id="announcementModal" class="fixed inset-0 bg-slate-950/80 modal-blur z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative">
+            <button onclick="closeAnnouncementModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                    <i class="fa-solid fa-pen-nib"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Duyuru / Metin Düzenleyici</h3>
+                    <p class="text-xs text-slate-400">Ana sayfadaki duyuruyu ve stilini kişiselleştirin.</p>
+                </div>
+            </div>
+
+            <form onsubmit="handleSaveAnnouncement(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Duyuru Metni</label>
+                    <textarea id="announcementTextInput" rows="3" required placeholder="Duyuru metninizi buraya yazın..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-amber-500 transition"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Font Ailesi</label>
+                        <select id="announcementFontFamily" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
+                            <option value="font-sans-custom">Sans-Serif (Modern)</option>
+                            <option value="font-serif-custom">Serif (Klasik)</option>
+                            <option value="font-mono-custom">Monospace (Kod)</option>
+                            <option value="font-futuristic-custom">Futuristic (Gelecek)</option>
+                            <option value="font-bubble-custom">Bubble (Yumuşak)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Yazı Boyutu</label>
+                        <select id="announcementFontSize" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
+                            <option value="text-xs">Küçük (XS)</option>
+                            <option value="text-sm" selected>Normal (SM)</option>
+                            <option value="text-base">Orta (Base)</option>
+                            <option value="text-lg">Büyük (LG)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Metin Rengi</label>
+                        <input type="color" id="announcementTextColor" value="#38bdf8" class="w-full h-10 bg-slate-950 border border-slate-800 rounded-xl p-1 cursor-pointer">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Arka Plan Rengi</label>
+                        <input type="color" id="announcementBgColor" value="#0f172a" class="w-full h-10 bg-slate-950 border border-slate-800 rounded-xl p-1 cursor-pointer">
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeAnnouncementModal()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition">
+                        İptal
+                    </button>
+                    <button type="submit" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg shadow-amber-500/20">
+                        Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: USER AUTHENTICATION / PROFILE MODAL -->
+    <div id="authModal" class="fixed inset-0 bg-slate-950/80 modal-blur z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative">
+            <button onclick="closeAuthModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <!-- TAB TOGGLE: LOGIN / REGISTER / PROFILE -->
+            <div id="authModalHeader" class="text-center space-y-2">
+                <h3 id="authModalTitle" class="text-xl font-bold text-white">Hesap İşlemleri</h3>
+                <p id="authModalSubtitle" class="text-xs text-slate-400">Kendi profilinizi oluşturun veya giriş yapın.</p>
+            </div>
+
+            <!-- VIEW A: LOGGED OUT (Login & Register Toggle) -->
+            <div id="authLoggedOutView" class="space-y-4">
+                <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
+                    <button id="authTabBtnLogin" onclick="toggleAuthSubTab('login')" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-cyan-500 text-slate-950 transition">Giriş Yap</button>
+                    <button id="authTabBtnRegister" onclick="toggleAuthSubTab('register')" class="flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition">Kayıt Ol</button>
+                </div>
+
+                <!-- LOGIN FORM -->
+                <form id="userLoginForm" onsubmit="handleUserLogin(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Kullanıcı Adı</label>
+                        <input type="text" id="loginUsernameInput" required placeholder="kullanici123" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Şifre</label>
+                        <input type="password" id="loginPasswordInput" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                    </div>
+                    <button type="submit" class="w-full py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg shadow-cyan-500/20">
+                        Oturum Aç
+                    </button>
+                </form>
+
+                <!-- REGISTER FORM -->
+                <form id="userRegisterForm" onsubmit="handleUserRegister(event)" class="hidden space-y-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Kullanıcı Adı *</label>
+                        <input type="text" id="regUsernameInput" required placeholder="kullanici123" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Görünür İsim</label>
+                        <input type="text" id="regDisplayNameInput" placeholder="Ahmet Yılmaz" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Profil Fotoğrafı URL (Opsiyonel)</label>
+                        <input type="url" id="regAvatarInput" placeholder="https://..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Şifre *</label>
+                        <input type="password" id="regPasswordInput" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                    </div>
+                    <button type="submit" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg shadow-cyan-500/20">
+                        Hesabı Oluştur
+                    </button>
+                </form>
+            </div>
+
+            <!-- VIEW B: LOGGED IN PROFILE EDIT -->
+            <div id="authLoggedInView" class="hidden space-y-4">
+                <form onsubmit="handleUpdateProfile(event)" class="space-y-4">
+                    <div class="flex items-center gap-4 bg-slate-950 p-3 rounded-2xl border border-slate-800">
+                        <img id="profileCurrentAvatar" src="" class="w-14 h-14 rounded-full object-cover bg-slate-800 border border-slate-700" alt="Avatar">
+                        <div>
+                            <h4 id="profileCurrentDisplayName" class="font-bold text-white text-sm"></h4>
+                            <p id="profileCurrentUsername" class="text-xs text-slate-500"></p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Görünür İsim</label>
+                        <input type="text" id="editDisplayNameInput" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Profil Fotoğrafı URL</label>
+                        <input type="url" id="editAvatarInput" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Yeni Şifre (Değiştirmek istemiyorsanız boş bırakın)</label>
+                        <input type="password" id="editPasswordInput" placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                    </div>
+
+                    <div class="flex gap-2 pt-2">
+                        <button type="button" onclick="logoutUser()" class="flex-1 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 font-bold rounded-xl text-xs transition">
+                            Çıkış Yap
+                        </button>
+                        <button type="submit" class="flex-1 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl text-xs transition">
+                            Güncelle
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: FULLSCREEN VIDEO PLAYER MODAL -->
+    <div id="playerModal" class="fixed inset-0 bg-slate-950/90 modal-blur z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl relative flex flex-col">
+            <div class="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+                <h3 id="playerClipTitle" class="font-bold text-white text-sm sm:text-base truncate pr-4">Video Oynatıcı</h3>
+                <button onclick="closePlayerModal()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="bg-black aspect-video-custom w-full flex items-center justify-center">
+                <video id="mainVideoPlayer" controls autoplay class="w-full h-full object-contain"></video>
+            </div>
+
+            <div class="p-4 bg-slate-900 flex items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <button id="playerDownloadBtn" onclick="" class="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl transition flex items-center gap-2">
+                        <i class="fa-solid fa-download"></i>
+                        <span>Tek Tıkla İndir</span>
+                    </button>
+                </div>
+                <span class="text-xs text-slate-500">MeloClips HD Player</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- APPLICATION LOGIC & DATABASE ENGINE -->
+    <script>
+        /* ==========================================================================
+           1. DATABASE ENGINE (INDEXEDDB FOR HEAVY MEDIA, LOCALSTORAGE FOR STATE)
+           ========================================================================== */
+        const DB_NAME = 'MeloClipsDB';
+        const DB_VERSION = 1;
+        let db = null;
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    const database = e.target.result;
+                    if (!database.objectStoreNames.contains('clips')) {
+                        database.createObjectStore('clips', { keyPath: 'id' });
+                    }
+                };
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve(db);
+                };
+                request.onerror = (e) => reject(e);
+            });
+        }
+
+        async function dbSaveClip(clipData) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction('clips', 'readwrite');
+                const store = tx.objectStore('clips');
+                store.put(clipData);
+                tx.oncomplete = () => resolve();
+                tx.onerror = (e) => reject(e);
+            });
+        }
+
+        async function dbGetAllClips() {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction('clips', 'readonly');
+                const store = tx.objectStore('clips');
+                const request = store.getAll();
+                request.onsuccess = () => resolve(request.result || []);
+                request.onerror = (e) => reject(e);
+            });
+        }
+
+        async function dbDeleteClip(clipId) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction('clips', 'readwrite');
+                const store = tx.objectStore('clips');
+                store.delete(clipId);
+                tx.oncomplete = () => resolve();
+                tx.onerror = (e) => reject(e);
+            });
+        }
+
+        /* ==========================================================================
+           2. STATE MANAGEMENT & DATA MODELS
+           ========================================================================== */
+        const ADMIN_PASSWORD_HASH = "147258369melo";
+
+        let state = {
+            isAdmin: false,
+            currentUser: null, // { username, displayName, avatar, downloads: [] }
+            clips: [],
+            announcement: {
+                text: "MeloClips platformuna hoş geldiniz! En güncel videoları keşfedin ve izleyin.",
+                fontFamily: "font-sans-custom",
+                fontSize: "text-sm",
+                textColor: "#38bdf8",
+                bgColor: "#0f172a"
+            }
+        };
+
+        // Initialize state on window load
+        window.addEventListener('DOMContentLoaded', async () => {
+            await initDB();
+            loadStateFromStorage();
+            await refreshClipsList();
+            renderAnnouncement();
+            updateUIState();
+        });
+
+        function loadStateFromStorage() {
+            // Admin session state
+            state.isAdmin = localStorage.getItem('meloclips_admin') === 'true';
+
+            // Announcement state
+            const savedAnn = localStorage.getItem('meloclips_announcement');
+            if (savedAnn) {
+                try { state.announcement = JSON.parse(savedAnn); } catch(e){}
+            }
+
+            // Current user session
+            const savedUser = localStorage.getItem('meloclips_current_user');
+            if (savedUser) {
+                try {
+                    const username = JSON.parse(savedUser);
+                    const users = getUsersFromStorage();
+                    if (users[username]) {
+                        state.currentUser = users[username];
+                    }
+                } catch(e){}
+            }
+        }
+
+        function getUsersFromStorage() {
+            const raw = localStorage.getItem('meloclips_users');
+            try {
+                return raw ? JSON.parse(raw) : {};
+            } catch(e) { return {}; }
+        }
+
+        function saveUsersToStorage(users) {
+            localStorage.setItem('meloclips_users', JSON.stringify(users));
+        }
+
+        async function refreshClipsList() {
+            state.clips = await dbGetAllClips();
+            renderClipsGrid();
+            renderDownloadsGrid();
+        }
+
+        /* ==========================================================================
+           3. UI NAVIGATION & TABS
+           ========================================================================== */
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-cyan-500/10', 'text-cyan-400', 'border', 'border-cyan-500/30');
+                btn.classList.add('text-slate-400');
+            });
+
+            const activeBtn = document.getElementById(`tabBtn-${tabName}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-slate-400');
+                activeBtn.classList.add('bg-cyan-500/10', 'text-cyan-400', 'border', 'border-cyan-500/30');
+            }
+
+            // Hide all tab sections
+            document.getElementById('tabContent-clips').classList.add('hidden');
+            document.getElementById('tabContent-downloads').classList.add('hidden');
+            document.getElementById('tabContent-about').classList.add('hidden');
+            document.getElementById('tabContent-admin').classList.add('hidden');
+
+            // Show target section
+            const target = document.getElementById(`tabContent-${tabName}`);
+            if (target) target.classList.remove('hidden');
+
+            if (tabName === 'downloads') {
+                renderDownloadsGrid();
+            }
+        }
+
+        function updateUIState() {
+            // Admin status updates
+            const adminBadge = document.getElementById('adminBadge');
+            const adminUploadBtn = document.getElementById('adminUploadBtn');
+            const adminBannerEditBtn = document.getElementById('adminBannerEditBtn');
+            const adminLoginForm = document.getElementById('adminLoginForm');
+            const adminDashboard = document.getElementById('adminDashboard');
+            const tabAdminText = document.getElementById('tabAdminText');
+
+            if (state.isAdmin) {
+                adminBadge.classList.remove('hidden');
+                adminBadge.classList.add('flex');
+                adminUploadBtn.classList.remove('hidden');
+                adminUploadBtn.classList.add('flex');
+                adminBannerEditBtn.classList.remove('hidden');
+                adminBannerEditBtn.classList.add('flex');
+                adminLoginForm.classList.add('hidden');
+                adminDashboard.classList.remove('hidden');
+                tabAdminText.textContent = "Yönetici Paneli";
+            } else {
+                adminBadge.classList.add('hidden');
+                adminBadge.classList.remove('flex');
+                adminUploadBtn.classList.add('hidden');
+                adminUploadBtn.classList.remove('flex');
+                adminBannerEditBtn.classList.add('hidden');
+                adminBannerEditBtn.classList.remove('flex');
+                adminLoginForm.classList.remove('hidden');
+                adminDashboard.classList.add('hidden');
+                tabAdminText.textContent = "Yönetici Girişi";
+            }
+
+            // User Profile updates
+            const navAvatar = document.getElementById('navAvatar');
+            const navUsername = document.getElementById('navUsername');
+            const downloadCountBadge = document.getElementById('downloadCountBadge');
+
+            if (state.currentUser) {
+                navAvatar.src = state.currentUser.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${state.currentUser.username}`;
+                navUsername.textContent = state.currentUser.displayName || state.currentUser.username;
+                downloadCountBadge.textContent = state.currentUser.downloads ? state.currentUser.downloads.length : 0;
+            } else {
+                navAvatar.src = "https://api.dicebear.com/7.x/bottts/svg?seed=Guest";
+                navUsername.textContent = "Giriş Yap";
+                downloadCountBadge.textContent = "0";
+            }
+
+            renderClipsGrid();
+        }
+
+        /* ==========================================================================
+           4. ANNOUNCEMENT & BANNER ENGINE
+           ========================================================================== */
+        function renderAnnouncement() {
+            const ann = state.announcement;
+            const contentDiv = document.getElementById('announcementContent');
+            const aboutBannerDisplay = document.getElementById('aboutBannerDisplay');
+
+            const styleClass = `${ann.fontFamily} ${ann.fontSize} font-bold transition-all duration-300`;
+
+            contentDiv.className = `flex-1 text-center sm:text-left ${styleClass}`;
+            contentDiv.style.color = ann.textColor;
+            contentDiv.innerHTML = `<i class="fa-solid fa-bullhorn mr-2"></i> ${escapeHtml(ann.text)}`;
+
+            document.getElementById('announcementBanner').style.backgroundColor = ann.bgColor;
+
+            // Render in About tab too
+            aboutBannerDisplay.style.backgroundColor = ann.bgColor;
+            aboutBannerDisplay.innerHTML = `<p class="${styleClass}" style="color: ${ann.textColor};">${escapeHtml(ann.text)}</p>`;
+        }
+
+        function openAnnouncementEditor() {
+            if (!state.isAdmin) return;
+            document.getElementById('announcementTextInput').value = state.announcement.text;
+            document.getElementById('announcementFontFamily').value = state.announcement.fontFamily;
+            document.getElementById('announcementFontSize').value = state.announcement.fontSize;
+            document.getElementById('announcementTextColor').value = state.announcement.textColor;
+            document.getElementById('announcementBgColor').value = state.announcement.bgColor;
+            document.getElementById('announcementModal').classList.remove('hidden');
+        }
+
+        function closeAnnouncementModal() {
+            document.getElementById('announcementModal').classList.add('hidden');
+        }
+
+        function handleSaveAnnouncement(e) {
+            e.preventDefault();
+            if (!state.isAdmin) return;
+
+            state.announcement = {
+                text: document.getElementById('announcementTextInput').value,
+                fontFamily: document.getElementById('announcementFontFamily').value,
+                fontSize: document.getElementById('announcementFontSize').value,
+                textColor: document.getElementById('announcementTextColor').value,
+                bgColor: document.getElementById('announcementBgColor').value
+            };
+
+            localStorage.setItem('meloclips_announcement', JSON.stringify(state.announcement));
+            renderAnnouncement();
+            closeAnnouncementModal();
+            showToast("Duyuru metni ve stili güncellendi!", "success");
+        }
+
+        /* ==========================================================================
+           5. ADMIN AUTHENTICATION
+           ========================================================================== */
+        function handleAdminLogin(e) {
+            e.preventDefault();
+            const password = document.getElementById('adminPasswordInput').value;
+            if (password === ADMIN_PASSWORD_HASH) {
+                state.isAdmin = true;
+                localStorage.setItem('meloclips_admin', 'true');
+                document.getElementById('adminPasswordInput').value = '';
+                updateUIState();
+                showToast("Yönetici girişi başarılı!", "success");
+            } else {
+                showToast("Hatalı yönetici şifresi!", "error");
+            }
+        }
+
+        function logoutAdmin() {
+            state.isAdmin = false;
+            localStorage.removeItem('meloclips_admin');
+            updateUIState();
+            showToast("Yönetici oturumu kapatıldı.", "info");
+        }
+
+        /* ==========================================================================
+           6. CLIP MANAGEMENT (UPLOAD, EDIT, DELETE)
+           ========================================================================== */
+        function openUploadModal(clipId = null) {
+            if (!state.isAdmin) return;
+
+            const form = document.querySelector('#uploadModal form');
+            form.reset();
+            document.getElementById('uploadProgressContainer').classList.add('hidden');
+
+            if (clipId) {
+                // Edit Mode
+                const clip = state.clips.find(c => c.id === clipId);
+                if (!clip) return;
+
+                document.getElementById('editClipId').value = clip.id;
+                document.getElementById('clipTitleInput').value = clip.title;
+                document.getElementById('uploadModalTitle').textContent = "Klip ve Kapak Düzenle";
+                document.getElementById('videoFileInputGroup').classList.add('hidden');
+                document.getElementById('editCoverHelp').classList.remove('hidden');
+            } else {
+                // New Upload Mode
+                document.getElementById('editClipId').value = '';
+                document.getElementById('uploadModalTitle').textContent = "Yeni Klip Yükle";
+                document.getElementById('videoFileInputGroup').classList.remove('hidden');
+                document.getElementById('editCoverHelp').classList.add('hidden');
+            }
+
+            document.getElementById('uploadModal').classList.remove('hidden');
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadModal').classList.add('hidden');
+        }
+
+        async function handleClipFormSubmit(e) {
+            e.preventDefault();
+            if (!state.isAdmin) return;
+
+            const editId = document.getElementById('editClipId').value;
+            const title = document.getElementById('clipTitleInput').value;
+            const coverFileInput = document.getElementById('clipCoverInput');
+            const videoFileInput = document.getElementById('clipVideoInput');
+
+            const progressContainer = document.getElementById('uploadProgressContainer');
+            const progressBar = document.getElementById('uploadProgressBar');
+            const progressText = document.getElementById('uploadProgressText');
+            const saveBtn = document.getElementById('saveClipBtn');
+
+            if (editId) {
+                // EDIT EXISTING CLIP
+                const clip = state.clips.find(c => c.id === editId);
+                if (!clip) return;
+
+                clip.title = title;
+
+                if (coverFileInput.files.length > 0) {
+                    clip.coverData = await readFileAsBase64(coverFileInput.files[0]);
+                }
+
+                await dbSaveClip(clip);
+                await refreshClipsList();
+                closeUploadModal();
+                showToast("Klip bilgileri güncellendi!", "success");
+
+            } else {
+                // NEW CLIP UPLOAD
+                if (coverFileInput.files.length === 0 || videoFileInput.files.length === 0) {
+                    showToast("Lütfen hem kapak fotoğrafı hem de video dosyası seçin!", "error");
+                    return;
+                }
+
+                saveBtn.disabled = true;
+                progressContainer.classList.remove('hidden');
+
+                try {
+                    // Read Cover Image
+                    progressBar.style.width = '30%';
+                    progressText.textContent = '30%';
+                    const coverData = await readFileAsBase64(coverFileInput.files[0]);
+
+                    // Read Video File
+                    progressBar.style.width = '70%';
+                    progressText.textContent = '70%';
+                    const videoBlob = videoFileInput.files[0];
+
+                    const newClip = {
+                        id: 'clip_' + Date.now(),
+                        title: title,
+                        coverData: coverData,
+                        videoBlob: videoBlob,
+                        createdAt: new Date().toISOString()
+                    };
+
+                    progressBar.style.width = '95%';
+                    progressText.textContent = '95%';
+
+                    await dbSaveClip(newClip);
+                    await refreshClipsList();
+
+                    progressBar.style.width = '100%';
+                    progressText.textContent = '100%';
+
+                    setTimeout(() => {
+                        saveBtn.disabled = false;
+                        closeUploadModal();
+                        showToast("Klip başarıyla yüklendi!", "success");
+                    }, 400);
+
+                } catch (err) {
+                    console.error(err);
+                    showToast("Klip yüklenirken bir hata oluştu.", "error");
+                    saveBtn.disabled = false;
+                }
+            }
+        }
+
+        async function deleteClip(clipId) {
+            if (!state.isAdmin) return;
+            if (confirm("Bu klibi silmek istediğinizden emin misiniz?")) {
+                await dbDeleteClip(clipId);
+                await refreshClipsList();
+                showToast("Klip silindi.", "info");
+            }
+        }
+
+        /* ==========================================================================
+           7. VIDEO GRID & PLAYBACK ENGINE
+           ========================================================================== */
+        function renderClipsGrid() {
+            const grid = document.getElementById('videoGrid');
+            const emptyState = document.getElementById('emptyVideoState');
+
+            grid.innerHTML = '';
+
+            if (state.clips.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+            }
+
+            state.clips.forEach(clip => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl hover:border-slate-700 transition duration-300 flex flex-col group";
+
+                card.innerHTML = `
+                    <!-- Thumbnail Container -->
+                    <div class="relative aspect-video-custom bg-slate-950 overflow-hidden cursor-pointer" onclick="playClip('${clip.id}')">
+                        <img src="${clip.coverData}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="${escapeHtml(clip.title)}">
+                        <div class="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition duration-300 flex items-center justify-center">
+                            <div class="w-12 h-12 rounded-2xl bg-cyan-500 text-slate-950 flex items-center justify-center font-bold text-lg shadow-xl shadow-cyan-500/30 transform scale-75 group-hover:scale-100 transition duration-300">
+                                <i class="fa-solid fa-play ml-0.5"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+                        <h3 class="font-bold text-slate-200 text-sm line-clamp-2 leading-snug">${escapeHtml(clip.title)}</h3>
+
+                        <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-800/80">
+                            <!-- Single-Click Download Button -->
+                            <button onclick="downloadClip('${clip.id}')" class="flex-1 py-2 bg-slate-800 hover:bg-cyan-500 hover:text-slate-950 text-slate-300 font-semibold rounded-xl text-xs transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-download"></i>
+                                <span>Tek Tıkla İndir</span>
+                            </button>
+
+                            <!-- Admin Controls -->
+                            ${state.isAdmin ? `
+                                <button onclick="openUploadModal('${clip.id}')" class="p-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl text-xs transition">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button onclick="deleteClip('${clip.id}')" class="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs transition">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function playClip(clipId) {
+            const clip = state.clips.find(c => c.id === clipId);
+            if (!clip) return;
+
+            const player = document.getElementById('mainVideoPlayer');
+            const videoUrl = URL.createObjectURL(clip.videoBlob);
+
+            player.src = videoUrl;
+            document.getElementById('playerClipTitle').textContent = clip.title;
+            document.getElementById('playerDownloadBtn').setAttribute('onclick', `downloadClip('${clip.id}')`);
+
+            document.getElementById('playerModal').classList.remove('hidden');
+        }
+
+        function closePlayerModal() {
+            const player = document.getElementById('mainVideoPlayer');
+            player.pause();
+            player.src = '';
+            document.getElementById('playerModal').classList.add('hidden');
+        }
+
+        /* ==========================================================================
+           8. SINGLE-CLICK DOWNLOAD ENGINE & PERSONAL HISTORY
+           ========================================================================== */
+        async function downloadClip(clipId) {
+            const clip = state.clips.find(c => c.id === clipId);
+            if (!clip) return;
+
+            // Trigger Single-Click Download
+            const url = URL.createObjectURL(clip.videoBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${clip.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.mp4`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+            showToast("İndirme başlatıldı!", "success");
+
+            // If user is logged in, record in personal download history
+            if (state.currentUser) {
+                const users = getUsersFromStorage();
+                const userObj = users[state.currentUser.username];
+                if (userObj) {
+                    if (!userObj.downloads) userObj.downloads = [];
+                    if (!userObj.downloads.includes(clip.id)) {
+                        userObj.downloads.push(clip.id);
+                        saveUsersToStorage(users);
+                        state.currentUser = userObj;
+                        localStorage.setItem('meloclips_current_user', JSON.stringify(userObj.username));
+                        updateUIState();
+                    }
+                }
+            }
+        }
+
+        function renderDownloadsGrid() {
+            const grid = document.getElementById('downloadsGrid');
+            const emptyState = document.getElementById('downloadsEmptyState');
+            const emptyTitle = document.getElementById('downloadsEmptyTitle');
+            const emptySub = document.getElementById('downloadsEmptySub');
+            const authBtn = document.getElementById('downloadsAuthBtn');
+
+            grid.innerHTML = '';
+
+            if (!state.currentUser) {
+                grid.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                emptyTitle.textContent = "Giriş Yapılmadı";
+                emptySub.textContent = "İndirilen videolarınızı kütüphanenizde saklamak için lütfen giriş yapın.";
+                authBtn.classList.remove('hidden');
+                return;
+            }
+
+            const userDownloads = state.currentUser.downloads || [];
+
+            if (userDownloads.length === 0) {
+                grid.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                emptyTitle.textContent = "Henüz İndirilen Klip Yok";
+                emptySub.textContent = "Siteden indirdiğiniz tüm videolar otomatik olarak buraya kaydedilir.";
+                authBtn.classList.add('hidden');
+                return;
+            }
+
+            grid.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            emptyState.classList.remove('flex');
+
+            userDownloads.forEach(clipId => {
+                const clip = state.clips.find(c => c.id === clipId);
+                if (!clip) return;
+
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl flex flex-col";
+
+                card.innerHTML = `
+                    <div class="relative aspect-video-custom bg-slate-950 overflow-hidden cursor-pointer" onclick="playClip('${clip.id}')">
+                        <img src="${clip.coverData}" class="w-full h-full object-cover" alt="${escapeHtml(clip.title)}">
+                    </div>
+                    <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+                        <h3 class="font-bold text-slate-200 text-sm line-clamp-2">${escapeHtml(clip.title)}</h3>
+                        <button onclick="downloadClip('${clip.id}')" class="w-full py-2 bg-cyan-500 text-slate-950 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-download"></i>
+                            <span>Tekrar İndir</span>
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        /* ==========================================================================
+           9. USER AUTHENTICATION & PROFILE SYSTEM
+           ========================================================================== */
+        function openAuthModal() {
+            const loggedOutView = document.getElementById('authLoggedOutView');
+            const loggedInView = document.getElementById('authLoggedInView');
+
+            if (state.currentUser) {
+                loggedOutView.classList.add('hidden');
+                loggedInView.classList.remove('hidden');
+                document.getElementById('authModalTitle').textContent = "Profil Ayarları";
+                document.getElementById('authModalSubtitle').textContent = "Kullanıcı bilgilerinizi güncelleyin.";
+
+                document.getElementById('profileCurrentAvatar').src = state.currentUser.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${state.currentUser.username}`;
+                document.getElementById('profileCurrentDisplayName').textContent = state.currentUser.displayName || state.currentUser.username;
+                document.getElementById('profileCurrentUsername').textContent = `@${state.currentUser.username}`;
+
+                document.getElementById('editDisplayNameInput').value = state.currentUser.displayName || '';
+                document.getElementById('editAvatarInput').value = state.currentUser.avatar || '';
+                document.getElementById('editPasswordInput').value = '';
+            } else {
+                loggedOutView.classList.remove('hidden');
+                loggedInView.classList.add('hidden');
+                document.getElementById('authModalTitle').textContent = "Hesap İşlemleri";
+                document.getElementById('authModalSubtitle').textContent = "Profilinizi yönetmek için oturum açın.";
+                toggleAuthSubTab('login');
+            }
+
+            document.getElementById('authModal').classList.remove('hidden');
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.add('hidden');
+        }
+
+        function toggleAuthSubTab(tab) {
+            const loginBtn = document.getElementById('authTabBtnLogin');
+            const regBtn = document.getElementById('authTabBtnRegister');
+            const loginForm = document.getElementById('userLoginForm');
+            const regForm = document.getElementById('userRegisterForm');
+
+            if (tab === 'login') {
+                loginBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg bg-cyan-500 text-slate-950 transition";
+                regBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition";
+                loginForm.classList.remove('hidden');
+                regForm.classList.add('hidden');
+            } else {
+                regBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg bg-cyan-500 text-slate-950 transition";
+                loginBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition";
+                regForm.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+            }
+        }
+
+        function handleUserRegister(e) {
+            e.preventDefault();
+            const username = document.getElementById('regUsernameInput').value.trim().toLowerCase();
+            const displayName = document.getElementById('regDisplayNameInput').value.trim();
+            const avatar = document.getElementById('regAvatarInput').value.trim();
+            const password = document.getElementById('regPasswordInput').value;
+
+            const users = getUsersFromStorage();
+            if (users[username]) {
+                showToast("Bu kullanıcı adı zaten alınmış!", "error");
+                return;
+            }
+
+            const newUser = {
+                username: username,
+                displayName: displayName || username,
+                avatar: avatar,
+                password: password,
+                downloads: []
+            };
+
+            users[username] = newUser;
+            saveUsersToStorage(users);
+
+            state.currentUser = newUser;
+            localStorage.setItem('meloclips_current_user', JSON.stringify(username));
+
+            updateUIState();
+            closeAuthModal();
+            showToast("Hesap başarıyla oluşturuldu!", "success");
+        }
+
+        function handleUserLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('loginUsernameInput').value.trim().toLowerCase();
+            const password = document.getElementById('loginPasswordInput').value;
+
+            const users = getUsersFromStorage();
+            const user = users[username];
+
+            if (user && user.password === password) {
+                state.currentUser = user;
+                localStorage.setItem('meloclips_current_user', JSON.stringify(username));
+                updateUIState();
+                closeAuthModal();
+                showToast("Giriş yapıldı!", "success");
+            } else {
+                showToast("Geçersiz kullanıcı adı veya şifre!", "error");
+            }
+        }
+
+        function handleUpdateProfile(e) {
+            e.preventDefault();
+            if (!state.currentUser) return;
+
+            const displayName = document.getElementById('editDisplayNameInput').value.trim();
+            const avatar = document.getElementById('editAvatarInput').value.trim();
+            const newPassword = document.getElementById('editPasswordInput').value;
+
+            const users = getUsersFromStorage();
+            const user = users[state.currentUser.username];
+
+            if (user) {
+                user.displayName = displayName || user.username;
+                user.avatar = avatar;
+                if (newPassword) user.password = newPassword;
+
+                saveUsersToStorage(users);
+                state.currentUser = user;
+                updateUIState();
+                closeAuthModal();
+                showToast("Profiliniz güncellendi!", "success");
+            }
+        }
+
+        function logoutUser() {
+            state.currentUser = null;
+            localStorage.removeItem('meloclips_current_user');
+            updateUIState();
+            closeAuthModal();
+            showToast("Oturum kapatıldı.", "info");
+        }
+
+        /* ==========================================================================
+           10. UTILITY HELPERS
+           ========================================================================== */
+        function readFileAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = (e) => reject(e);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function togglePasswordVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+
+            let colors = "bg-slate-900 border-slate-800 text-slate-200";
+            let icon = "fa-circle-info text-cyan-400";
+
+            if (type === 'success') {
+                colors = "bg-slate-900 border-emerald-500/40 text-emerald-300";
+                icon = "fa-circle-check text-emerald-400";
+            } else if (type === 'error') {
+                colors = "bg-slate-900 border-red-500/40 text-red-300";
+                icon = "fa-triangle-exclamation text-red-400";
+            }
+
+            toast.className = `p-3 px-4 rounded-2xl border ${colors} shadow-2xl flex items-center gap-3 text-xs font-semibold transform transition duration-300 pointer-events-auto`;
+            toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i><span>${escapeHtml(message)}</span>`;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
+```
