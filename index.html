@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Klip Sitesi</title>
+</head>
+<body style="background: #121212; color: white; font-family: sans-serif; padding: 20px;">
+
+    <h2>🚀 Klip Ekle</h2>
+    <input type="text" id="baslik" placeholder="Klip Başlığı (Örn: Beşiktaş Gol)" style="padding: 10px; margin-bottom: 10px; width: 100%; box-sizing: border-box;"><br>
+    <input type="text" id="link" placeholder="Streamable Linkini Buraya Yapıştır" style="padding: 10px; margin-bottom: 10px; width: 100%; box-sizing: border-box;"><br>
+    <button onclick="klipEkle()" style="padding: 10px 20px; background: #3b82f6; color: white; border: none; cursor: pointer; border-radius: 5px; font-weight: bold;">Klipi Ekle</button>
+
+    <hr style="margin: 30px 0; border-color: #333;">
+
+    <h2>🎬 Eklenen Klipler</h2>
+    <div id="klip-listesi">Klipler yükleniyor...</div>
+
+    <!-- Supabase Bağlantısı ve Kodlar -->
+    <script type="module">
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+        const supabaseUrl = 'https://cydxfpuljvgcplugmrej.supabase.co'
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5ZHhmcHVsanZnY3BsdWdtcmVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4NzQwOTIsImV4cCI6MjEwODQ1MDA5Mn0.EUqX9Nl-jPirzzEx5owz0hR5fUrf9HO_B1JeX2_nuoQ'
+
+        const supabase = createClient(supabaseUrl, supabaseKey)
+
+        // 1. Klip Ekleme Butonu Çalışınca
+        window.klipEkle = async function() {
+            const baslik = document.getElementById('baslik').value;
+            const link = document.getElementById('link').value;
+
+            if (!baslik || !link) {
+                alert('Lütfen başlık ve link yaz!');
+                return;
+            }
+
+            const { error } = await supabase
+                .from('clips')
+                .insert([{ title: baslik, video_url: link }]);
+
+            if (error) {
+                alert('Hata çıktı: ' + error.message);
+            } else {
+                alert('Klip başarıyla eklendi! 🎉');
+                document.getElementById('baslik').value = '';
+                document.getElementById('link').value = '';
+                klipleriGetir(); // Listeyi hemen güncelle
+            }
+        }
+
+        // 2. Klipleri Listeleme
+        async function klipleriGetir() {
+            const { data: clips, error } = await supabase
+                .from('clips')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Hata:', error);
+                return;
+            }
+
+            const listeDivi = document.getElementById('klip-listesi');
+            listeDivi.innerHTML = '';
+
+            if (clips.length === 0) {
+                listeDivi.innerHTML = '<p>Henüz hiç klip eklenmemiş.</p>';
+                return;
+            }
+
+            clips.forEach(clip => {
+                listeDivi.innerHTML += `
+                    <div style="background: #1e1e1e; padding: 15px; margin-bottom: 10px; border-radius: 8px;">
+                        <h3>${clip.title}</h3>
+                        <a href="${clip.video_url}" target="_blank" style="color: #3b82f6; text-decoration: none; font-weight: bold;">Videoyu İzle / İndir ↗</a>
+                    </div>
+                `;
+            });
+        }
+
+        // Sayfa açılınca klipleri getir
+        klipleriGetir();
+    </script>
+</body>
+</html>
