@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FREE-CLIPS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase Kütüphanesi -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f4f4f5',
+              100: '#e4e4e7',
+              500: '#71717a',
+              900: '#18181b',
+              950: '#09090b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Oswald:wght@500;700&family=Poppins:wght@400;600&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #09090b;
+      color: #f4f4f5;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #09090b;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-zinc-800 selection:text-zinc-100 overflow-x-hidden">
+
+  <!-- DUYURU BANNER -->
+  <div id="announcement-banner" class="hidden w-full py-2.5 px-4 text-center transition-all duration-300 relative border-b border-zinc-800">
+    <div class="max-w-6xl mx-auto flex items-center justify-between gap-4">
+      <div id="banner-text" class="text-sm font-medium mx-auto break-words max-w-full"></div>
+      <button onclick="toggleBannerVisibility(false)" class="text-zinc-400 hover:text-white text-xs p-1">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- HEADER / NAV -->
+  <header class="border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- LOGO -->
+      <a href="#" onclick="switchTab('explore')" class="flex items-center gap-2.5 text-lg font-semibold tracking-tight text-white hover:opacity-90">
+        <div class="w-8 h-8 rounded-lg bg-zinc-100 text-zinc-950 flex items-center justify-center font-bold text-base">F</div>
+        <span>FREE-CLIPS</span>
+      </a>
+
+      <!-- SEARCH BAR -->
+      <div class="flex-1 max-w-xs mx-2 min-w-[160px]">
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500"></i>
+          <input type="text" id="search-input" oninput="filterClips()" placeholder="Klip ara..." class="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-600 transition">
+        </div>
+      </div>
+
+      <!-- RIGHT NAV ACTIONS -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <button onclick="switchTab('downloads')" id="btn-tab-downloads" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-arrow-down-to-line"></i>
+          <span class="hidden sm:inline">İndirilenler</span>
+        </button>
+
+        <!-- ADMIN STATUS / ACTIONS -->
+        <div id="admin-actions" class="hidden flex items-center gap-1.5">
+          <button onclick="openModal('modal-upload')" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-100 text-zinc-950 hover:bg-white transition flex items-center gap-1">
+            <i class="fa-solid fa-plus"></i> Klip Ekle
+          </button>
+          <button onclick="openModal('modal-banner-settings')" class="p-1.5 rounded-lg text-xs bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition" title="Duyuru Ayarları">
+            <i class="fa-solid fa-gear"></i>
+          </button>
+          <button onclick="adminLogout()" class="p-1.5 rounded-lg text-xs bg-zinc-900 border border-zinc-800 text-red-400 hover:text-red-300 transition" title="Çıkış Yap">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+
+        <button id="btn-admin-login" onclick="openModal('modal-admin-login')" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition">
+          Yönetici
+        </button>
+
+        <!-- USER PROFILE BUTTON -->
+        <div id="user-profile-container">
+          <button onclick="openModal('modal-auth')" id="btn-user-profile" class="flex items-center gap-2 p-1 rounded-lg hover:bg-zinc-900 transition border border-transparent">
+            <div id="nav-avatar" class="w-7 h-7 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-400 text-xs flex items-center justify-center overflow-hidden">
+              <i class="fa-solid fa-user"></i>
+            </div>
+            <span id="nav-username" class="text-xs font-medium text-zinc-300 max-w-[80px] truncate hidden sm:inline">Giriş Yap</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-6xl mx-auto px-4 py-8 flex-1 w-full">
+    
+    <!-- EXPLORE TAB -->
+    <section id="tab-explore">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-xl font-bold tracking-tight text-white">Keşfet</h1>
+          <p class="text-xs text-zinc-400 mt-0.5">Yüklenen tüm ortak klip ve editler</p>
+        </div>
+        <span id="clip-count" class="text-xs bg-zinc-900 border border-zinc-800 text-zinc-400 px-2.5 py-1 rounded-full">0 klip</span>
+      </div>
+
+      <!-- CLIPS GRID -->
+      <div id="clips-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <!-- JS Inject -->
+      </div>
+
+      <!-- EMPTY STATE -->
+      <div id="explore-empty" class="hidden py-20 text-center border border-dashed border-zinc-800 rounded-2xl bg-zinc-950/40">
+        <i class="fa-solid fa-film text-3xl text-zinc-700 mb-3"></i>
+        <p class="text-sm font-medium text-zinc-400">Henüz klip eklenmemiş</p>
+        <p class="text-xs text-zinc-600 mt-1">Yönetici girişi yaparak ilk klibin linkini ekleyebilirsiniz.</p>
+      </div>
+    </section>
+
+    <!-- DOWNLOADS TAB -->
+    <section id="tab-downloads" class="hidden">
+      <div class="mb-6">
+        <h1 class="text-xl font-bold tracking-tight text-white">İndirilen Klipler</h1>
+        <p class="text-xs text-zinc-400 mt-0.5">Bu cihazda indirdiğiniz tüm kliplerin geçmişi</p>
+      </div>
+
+      <div id="downloads-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <!-- JS Inject -->
+      </div>
+
+      <div id="downloads-empty" class="hidden py-20 text-center border border-dashed border-zinc-800 rounded-2xl bg-zinc-950/40">
+        <i class="fa-solid fa-circle-down text-3xl text-zinc-700 mb-3"></i>
+        <p class="text-sm font-medium text-zinc-400">Henüz bir klip indirmediniz</p>
+        <p class="text-xs text-zinc-600 mt-1">Beğendiğiniz klipleri tek tıkla cihazınıza indirebilirsiniz.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-zinc-900 bg-zinc-950 py-6 text-center text-xs text-zinc-600">
+    <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <p>&copy; FREE-CLIPS - Video Paylaşım Platformu</p>
+      <p class="text-zinc-700">Link Tabanlı Sınırsız Altyapı</p>
+    </div>
+  </footer>
+
+  <!-- MODALS CONTAINER -->
+
+  <!-- ADMIN LOGIN MODAL -->
+  <div id="modal-admin-login" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-sm relative">
+      <button onclick="closeModal('modal-admin-login')" class="absolute right-4 top-4 text-zinc-500 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      <h3 class="text-base font-semibold mb-1 text-white">Yönetici Girişi</h3>
+      <p class="text-xs text-zinc-400 mb-4">Gelişmiş yönetim yetkileri için şifrenizi girin.</p>
+      <form onsubmit="handleAdminLogin(event)" class="space-y-3">
+        <input type="password" id="admin-password" placeholder="Yönetici Şifresi" required class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500">
+        <button type="submit" class="w-full bg-zinc-100 text-zinc-950 font-medium py-2 rounded-xl text-sm hover:bg-white transition">Giriş Yap</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- UPLOAD MODAL (LİNK TABANLI) -->
+  <div id="modal-upload" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-md relative max-h-[90vh] overflow-y-auto custom-scroll">
+      <button onclick="closeModal('modal-upload')" class="absolute right-4 top-4 text-zinc-500 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      <h3 class="text-base font-semibold mb-1 text-white">Yeni Klip Ekle (Link İle)</h3>
+      <p class="text-xs text-zinc-400 mb-4">Streamable, YouTube veya doğrudan video linki girin.</p>
+      
+      <form onsubmit="handleClipUpload(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-zinc-400 mb-1">Klip Başlığı *</label>
+          <input type="text" id="upload-title" required placeholder="Örn: Quaresma Trivela Klip (500MB)" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-zinc-400 mb-1">Kapak Fotoğrafı (Dosya veya Link)</label>
+          <input type="file" id="upload-cover" accept="image/*" required class="w-full text-xs text-zinc-400 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-zinc-800 file:text-zinc-200 hover:file:bg-zinc-700">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-zinc-400 mb-1">Video Linki (Streamable / MP4 URL) *</label>
+          <input type="url" id="upload-video-url" required placeholder="https://streamable.com/ e.g. veya doğrudan .mp4 linki" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500">
+        </div>
+
+        <button type="submit" id="btn-submit-upload" class="w-full bg-zinc-100 text-zinc-950 font-medium py-2.5 rounded-xl text-sm hover:bg-white transition flex items-center justify-center gap-2">
+          <span>Klibi Yayınla</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- BANNER SETTINGS MODAL -->
+  <div id="modal-banner-settings" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-md relative">
+      <button onclick="closeModal('modal-banner-settings')" class="absolute right-4 top-4 text-zinc-500 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      <h3 class="text-base font-semibold mb-1 text-white">Duyuru / Açıklama Alanı</h3>
+      <p class="text-xs text-zinc-400 mb-4">Sitenin en üstünde yer alan duyuru bandını özelleştirin.</p>
+      
+      <form onsubmit="handleBannerSave(event)" class="space-y-3">
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="banner-active" class="rounded bg-zinc-950 border-zinc-800 text-zinc-100 focus:ring-0">
+          <label for="banner-active" class="text-xs text-zinc-300 font-medium">Duyuruyu Göster</label>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-zinc-400 mb-1">Duyuru Metni</label>
+          <input type="text" id="banner-input-text" placeholder="Hoş geldiniz! Yeni klipler eklendi." class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-zinc-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-medium text-zinc-400 mb-1">Font Ailesi</label>
+            <select id="banner-input-font" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-100">
+              <option value="Inter">Inter (Sade)</option>
+              <option value="Oswald">Oswald (Kalın/Spor)</option>
+              <option value="Poppins">Poppins (Yumuşak)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-zinc-400 mb-1">Yazı Boyutu</label>
+            <select id="banner-input-size" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-100">
+              <option value="text-xs">Küçük</option>
+              <option value="text-sm">Orta</option>
+              <option value="text-base">Büyük</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-medium text-zinc-400 mb-1">Arka Plan Rengi</label>
+            <input type="color" id="banner-input-bg" value="#18181b" class="w-full h-8 bg-zinc-950 border border-zinc-800 rounded-lg p-0.5 cursor-pointer">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-zinc-400 mb-1">Yazı Rengi</label>
+            <input type="color" id="banner-input-color" value="#f4f4f5" class="w-full h-8 bg-zinc-950 border border-zinc-800 rounded-lg p-0.5 cursor-pointer">
+          </div>
+        </div>
+
+        <button type="submit" class="w-full bg-zinc-100 text-zinc-950 font-medium py-2 rounded-xl text-sm hover:bg-white transition mt-2">Kaydet</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- USER AUTH / PROFILE MODAL -->
+  <div id="modal-auth" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-sm relative">
+      <button onclick="closeModal('modal-auth')" class="absolute right-4 top-4 text-zinc-500 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+
+      <!-- UNLOGGED STATE -->
+      <div id="auth-unlogged">
+        <h3 class="text-base font-semibold mb-1 text-white">Kullanıcı Profili</h3>
+        <p class="text-xs text-zinc-400 mb-4">Profil oluşturun veya hesabınıza giriş yapın.</p>
+        
+        <form onsubmit="handleUserAuth(event)" class="space-y-3">
+          <div>
+            <input type="text" id="user-name-input" required placeholder="Kullanıcı Adı" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-zinc-400 mb-1">Profil Resmi (İsteğe Bağlı)</label>
+            <input type="file" id="user-avatar-input" accept="image/*" class="w-full text-xs text-zinc-400 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:bg-zinc-800 file:text-zinc-200">
+          </div>
+          <button type="submit" class="w-full bg-zinc-100 text-zinc-950 font-medium py-2 rounded-xl text-sm hover:bg-white transition">Giriş Yap / Kaydol</button>
+        </form>
+      </div>
+
+      <!-- LOGGED STATE -->
+      <div id="auth-logged" class="hidden text-center py-2">
+        <div class="relative w-20 h-20 mx-auto mb-3">
+          <img id="profile-modal-avatar" src="" class="w-full h-full rounded-full object-cover border-2 border-zinc-700 hidden">
+          <div id="profile-modal-placeholder" class="w-full h-full rounded-full bg-zinc-800 text-zinc-400 flex items-center justify-center text-2xl border-2 border-zinc-700">
+            <i class="fa-solid fa-user"></i>
+          </div>
+        </div>
+        <h4 id="profile-modal-username" class="text-base font-semibold text-white"></h4>
+        <p class="text-xs text-zinc-500 mb-5">Aktif Kullanıcı Hesabı</p>
+        
+        <button onclick="userLogout()" class="w-full bg-zinc-950 border border-zinc-800 text-red-400 hover:text-red-300 font-medium py-2 rounded-xl text-sm transition">Hesaptan Çıkış Yap</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- VIDEO PLAYER MODAL -->
+  <div id="modal-player" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4">
+    <div class="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-3xl overflow-hidden relative flex flex-col max-h-[95vh]">
+      <div class="p-3 border-b border-zinc-800 flex items-center justify-between">
+        <h4 id="player-title" class="text-sm font-semibold text-zinc-200 truncate pr-4">Video Player</h4>
+        <button onclick="closePlayerModal()" class="text-zinc-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div class="bg-black flex-1 flex items-center justify-center min-h-[250px] sm:min-h-[380px]" id="player-container">
+        <!-- Video veya iframe buraya gelecek -->
+      </div>
+      <div class="p-3 border-t border-zinc-800 flex items-center justify-between bg-zinc-900/50">
+        <span id="player-views" class="text-xs text-zinc-500"></span>
+        <a id="btn-download-clip" href="#" target="_blank" class="px-4 py-1.5 rounded-lg text-xs font-medium bg-zinc-100 text-zinc-950 hover:bg-white transition flex items-center gap-1.5">
+          <i class="fa-solid fa-download"></i> İndir / Kaynağa Git
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- APPLICATION SCRIPT -->
+  <script>
+    const ADMIN_PASS = "147258369melo";
+
+    const SUPABASE_URL = 'https://krvnmcvaqlmnuztxbxef.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtydm5tY3ZhcWxtbnV6dHhieGVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4NzE0NTMsImV4cCI6MjEwODQ0NzQ1M30.iKZq9LeAAwgNluC7B97hek1NkTm742MyApOu5KAzYOg';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let state = {
+      isAdmin: false,
+      user: null,
+      clips: [],
+      downloads: [],
+      activeTab: 'explore',
+      banner: {
+        active: false,
+        text: '',
+        font: 'Inter',
+        size: 'text-xs',
+        bg: '#18181b',
+        color: '#f4f4f5'
+      }
+    };
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      loadLocalStorage();
+      await fetchClipsFromSupabase();
+      renderApp();
+    });
+
+    function loadLocalStorage() {
+      state.isAdmin = sessionStorage.getItem('meloclips_admin') === 'true';
+      const savedUser = localStorage.getItem('meloclips_user');
+      if (savedUser) state.user = JSON.parse(savedUser);
+
+      const savedDownloads = localStorage.getItem('meloclips_downloads');
+      if (savedDownloads) state.downloads = JSON.parse(savedDownloads);
+
+      const savedBanner = localStorage.getItem('meloclips_banner');
+      if (savedBanner) state.banner = JSON.parse(savedBanner);
+    }
+
+    async function fetchClipsFromSupabase() {
+      try {
+        const { data, error } = await supabaseClient
+          .from('clips')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data) {
+          state.clips = data.map(c => ({
+            id: c.id,
+            title: c.title,
+            coverUrl: c.cover_url,
+            videoUrl: c.video_url,
+            views: c.views || 0,
+            createdAt: c.created_at
+          }));
+        }
+      } catch (err) {
+        console.error("Klipler yüklenirken hata:", err.message);
+        state.clips = [];
+      }
+    }
+
+    async function fileToDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function renderApp() {
+      renderNav();
+      renderBanner();
+      renderClips();
+      renderDownloads();
+    }
+
+    function renderNav() {
+      const adminActions = document.getElementById('admin-actions');
+      const btnAdminLogin = document.getElementById('btn-admin-login');
+      const navUsername = document.getElementById('nav-username');
+      const navAvatar = document.getElementById('nav-avatar');
+
+      if (state.isAdmin) {
+        adminActions.classList.remove('hidden');
+        btnAdminLogin.classList.add('hidden');
+      } else {
+        adminActions.classList.add('hidden');
+        btnAdminLogin.classList.remove('hidden');
+      }
+
+      if (state.user) {
+        navUsername.textContent = state.user.username;
+        if (state.user.avatar) {
+          navAvatar.innerHTML = `<img src="${state.user.avatar}" class="w-full h-full object-cover">`;
+        } else {
+          navAvatar.innerHTML = `<i class="fa-solid fa-user"></i>`;
+        }
+      } else {
+        navUsername.textContent = "Giriş Yap";
+        navAvatar.innerHTML = `<i class="fa-solid fa-user"></i>`;
+      }
+    }
+
+    function renderBanner() {
+      const bannerEl = document.getElementById('announcement-banner');
+      const bannerTextEl = document.getElementById('banner-text');
+
+      if (state.banner.active && state.banner.text) {
+        bannerEl.classList.remove('hidden');
+        bannerEl.style.backgroundColor = state.banner.bg;
+        bannerEl.style.color = state.banner.color;
+        bannerTextEl.style.fontFamily = `'${state.banner.font}', sans-serif`;
+        bannerTextEl.className = `text-center font-medium mx-auto break-words max-w-full ${state.banner.size}`;
+        bannerTextEl.textContent = state.banner.text;
+      } else {
+        bannerEl.classList.add('hidden');
+      }
+    }
+
+    function renderClips(filterQuery = '') {
+      const grid = document.getElementById('clips-grid');
+      const emptyState = document.getElementById('explore-empty');
+      const clipCount = document.getElementById('clip-count');
+
+      grid.innerHTML = '';
+
+      let filtered = state.clips;
+      if (filterQuery) {
+        filtered = filtered.filter(c => c.title.toLowerCase().includes(filterQuery.toLowerCase()));
+      }
+
+      clipCount.textContent = `${filtered.length} klip`;
+
+      if (filtered.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      filtered.forEach(clip => {
+        const card = document.createElement('div');
+        card.className = "group bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden flex flex-col justify-between hover:border-zinc-700 transition";
+
+        card.innerHTML = `
+          <div class="relative aspect-video bg-zinc-950 overflow-hidden cursor-pointer" onclick="playClip('${clip.id}')">
+            <img src="${clip.coverUrl}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" alt="${clip.title}">
+            <div class="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+              <div class="w-10 h-10 rounded-full bg-white/90 text-zinc-950 flex items-center justify-center text-sm pl-0.5">
+                <i class="fa-solid fa-play"></i>
+              </div>
+            </div>
+          </div>
+          <div class="p-3 flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0">
+              <h3 class="text-xs font-semibold text-zinc-200 truncate">${clip.title}</h3>
+              <p class="text-[10px] text-zinc-500 mt-0.5">${clip.views || 0} görüntülenme</p>
+            </div>
+            <div class="flex items-center gap-1">
+              ${state.isAdmin ? `
+                <button onclick="deleteClip('${clip.id}')" class="p-1.5 text-zinc-500 hover:text-red-400 text-xs" title="Sil">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              ` : ''}
+              <button onclick="downloadClip('${clip.id}')" class="p-1.5 text-zinc-400 hover:text-white text-xs" title="İndir">
+                <i class="fa-solid fa-download"></i>
+              </button>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function renderDownloads() {
+      const grid = document.getElementById('downloads-grid');
+      const emptyState = document.getElementById('downloads-empty');
+
+      grid.innerHTML = '';
+
+      if (state.downloads.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      state.downloads.forEach(clip => {
+        const card = document.createElement('div');
+        card.className = "bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden flex flex-col justify-between";
+
+        card.innerHTML = `
+          <div class="relative aspect-video bg-zinc-950 overflow-hidden cursor-pointer" onclick="playClip('${clip.id}')">
+            <img src="${clip.coverUrl}" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-black/20 flex items-center justify-center">
+              <div class="w-8 h-8 rounded-full bg-white/80 text-zinc-950 flex items-center justify-center text-xs pl-0.5">
+                <i class="fa-solid fa-play"></i>
+              </div>
+            </div>
+          </div>
+          <div class="p-3 flex items-center justify-between gap-2">
+            <div class="truncate">
+              <h3 class="text-xs font-semibold text-zinc-200 truncate">${clip.title}</h3>
+              <p class="text-[10px] text-zinc-500 mt-0.5">İndirildi</p>
+            </div>
+            <button onclick="downloadClip('${clip.id}')" class="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs rounded-lg transition flex items-center gap-1">
+              <i class="fa-solid fa-download"></i> Tekrar İndir
+            </button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function switchTab(tab) {
+      state.activeTab = tab;
+      document.getElementById('tab-explore').classList.toggle('hidden', tab !== 'explore');
+      document.getElementById('tab-downloads').classList.toggle('hidden', tab !== 'downloads');
+      if (tab === 'downloads') renderDownloads();
+    }
+
+    function filterClips() {
+      const query = document.getElementById('search-input').value;
+      renderClips(query);
+    }
+
+    function handleAdminLogin(e) {
+      e.preventDefault();
+      const pass = document.getElementById('admin-password').value;
+      if (pass === ADMIN_PASS) {
+        state.isAdmin = true;
+        sessionStorage.setItem('meloclips_admin', 'true');
+        closeModal('modal-admin-login');
+        document.getElementById('admin-password').value = '';
+        renderApp();
+      } else {
+        alert("Hatalı yönetici şifresi!");
+      }
+    }
+
+    function adminLogout() {
+      state.isAdmin = false;
+      sessionStorage.removeItem('meloclips_admin');
+      renderApp();
+    }
+
+    function handleBannerSave(e) {
+      e.preventDefault();
+      state.banner = {
+        active: document.getElementById('banner-active').checked,
+        text: document.getElementById('banner-input-text').value,
+        font: document.getElementById('banner-input-font').value,
+        size: document.getElementById('banner-input-size').value,
+        bg: document.getElementById('banner-input-bg').value,
+        color: document.getElementById('banner-input-color').value
+      };
+      localStorage.setItem('meloclips_banner', JSON.stringify(state.banner));
+      closeModal('modal-banner-settings');
+      renderBanner();
+    }
+
+    function toggleBannerVisibility(visible) {
+      state.banner.active = visible;
+      localStorage.setItem('meloclips_banner', JSON.stringify(state.banner));
+      renderBanner();
+    }
+
+    // LİNK TABANLI YÜKLEME
+    async function handleClipUpload(e) {
+      e.preventDefault();
+      
+      const title = document.getElementById('upload-title').value.trim();
+      const coverFile = document.getElementById('upload-cover').files[0];
+      const videoUrl = document.getElementById('upload-video-url').value.trim();
+
+      if (!title || !coverFile || !videoUrl) return;
+
+      const submitBtn = document.getElementById('btn-submit-upload');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Kaydediliyor...`;
+
+      try {
+        const coverUrl = await fileToDataURL(coverFile);
+
+        const newClipId = 'clip_' + Date.now();
+        const dbRecord = {
+          id: newClipId,
+          title: title,
+          cover_url: coverUrl,
+          video_url: videoUrl,
+          views: 0,
+          created_at: new Date().toISOString()
+        };
+
+        const { error } = await supabaseClient.from('clips').insert([dbRecord]);
+        if (error) throw error;
+
+        await fetchClipsFromSupabase();
+        
+        closeModal('modal-upload');
+        document.getElementById('upload-title').value = '';
+        document.getElementById('upload-cover').value = '';
+        document.getElementById('upload-video-url').value = '';
+
+        renderClips();
+      } catch (err) {
+        alert("Kayıt sırasında hata oluştu: " + err.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<span>Klibi Yayınla</span>`;
+      }
+    }
+
+    async function deleteClip(id) {
+      if (!confirm("Bu klibi silmek istediğinizden emin misiniz?")) return;
+      
+      try {
+        const { error } = await supabaseClient.from('clips').delete().eq('id', id);
+        if (error) throw error;
+
+        await fetchClipsFromSupabase();
+        renderClips();
+      } catch (err) {
+        alert("Silinirken hata oluştu: " + err.message);
+      }
+    }
+
+    async function playClip(id) {
+      const clip = state.clips.find(c => c.id === id) || state.downloads.find(c => c.id === id);
+      if (!clip) return;
+
+      clip.views = (clip.views || 0) + 1;
+      await supabaseClient.from('clips').update({ views: clip.views }).eq('id', id);
+
+      document.getElementById('player-title').textContent = clip.title;
+      document.getElementById('player-views').textContent = `${clip.views} görüntülenme`;
+      
+      const container = document.getElementById('player-container');
+      container.innerHTML = '';
+
+      if (clip.videoUrl.includes('streamable.com')) {
+        // Streamable embed
+        let embedUrl = clip.videoUrl;
+        if (!embedUrl.includes('/e/')) {
+          const parts = embedUrl.split('/');
+          const code = parts[parts.length - 1] || parts[parts.length - 2];
+          embedUrl = `https://streamable.com/e/${code}`;
+        }
+        container.innerHTML = `<iframe src="${embedUrl}" width="100%" height="380px" frameborder="0" allowfullscreen class="w-full h-full min-h-[350px]"></iframe>`;
+      } else {
+        // Normal video tag
+        const videoEl = document.createElement('video');
+        videoEl.id = 'main-video-player';
+        videoEl.controls = true;
+        videoEl.autoplay = true;
+        videoEl.className = 'max-h-[70vh] w-full object-contain';
+        videoEl.src = clip.videoUrl;
+        container.appendChild(videoEl);
+      }
+
+      const downloadBtn = document.getElementById('btn-download-clip');
+      downloadBtn.href = clip.videoUrl;
+
+      openModal('modal-player');
+    }
+
+    function closePlayerModal() {
+      const container = document.getElementById('player-container');
+      container.innerHTML = '';
+      closeModal('modal-player');
+    }
+
+    function downloadClip(id) {
+      const clip = state.clips.find(c => c.id === id) || state.downloads.find(c => c.id === id);
+      if (!clip) return;
+
+      if (!state.downloads.some(d => d.id === clip.id)) {
+        state.downloads.unshift(clip);
+        localStorage.setItem('meloclips_downloads', JSON.stringify(state.downloads));
+      }
+
+      window.open(clip.videoUrl, '_blank');
+    }
+
+    function handleUserAuth(e) {
+      e.preventDefault();
+      const username = document.getElementById('user-name-input').value.trim();
+      const avatarFile = document.getElementById('user-avatar-input').files[0];
+
+      if (!username) return;
+
+      const completeLogin = (avatarUrl = '') => {
+        state.user = { username, avatar: avatarUrl };
+        localStorage.setItem('meloclips_user', JSON.stringify(state.user));
+        closeModal('modal-auth');
+        renderNav();
+      };
+
+      if (avatarFile) {
+        fileToDataURL(avatarFile).then(url => completeLogin(url)).catch(() => completeLogin());
+      } else {
+        completeLogin();
+      }
+    }
+
+    function userLogout() {
+      state.user = null;
+      localStorage.removeItem('meloclips_user');
+      closeModal('modal-auth');
+      renderNav();
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+      if (id === 'modal-auth') {
+        const unlogged = document.getElementById('auth-unlogged');
+        const logged = document.getElementById('auth-logged');
+        if (state.user) {
+          unlogged.classList.add('hidden');
+          logged.classList.remove('hidden');
+          document.getElementById('profile-modal-username').textContent = state.user.username;
+          if (state.user.avatar) {
+            document.getElementById('profile-modal-avatar').src = state.user.avatar;
+            document.getElementById('profile-modal-avatar').classList.remove('hidden');
+            document.getElementById('profile-modal-placeholder').classList.add('hidden');
+          }
+        } else {
+          unlogged.classList.remove('hidden');
+          logged.classList.add('hidden');
+        }
+      }
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
