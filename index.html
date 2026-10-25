@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FREE-CLIPS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Üst Menü -->
+    <header class="border-b border-gray-800 bg-[#0b0f19]/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+            <h1 class="text-xl font-bold tracking-wider text-white">FREE-CLIPS</h1>
+            <button id="adminBtn" onclick="handleAdminClick()" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded-lg border border-gray-700 transition">
+                Yönetici Girişi
+            </button>
+        </div>
+    </header>
+
+    <!-- Ana İçerik -->
+    <main class="max-w-6xl mx-auto px-4 py-8 flex-grow w-full">
+
+        <!-- Yalnızca Yöneticiye Görünen Panel -->
+        <div id="adminPanel" class="hidden mb-10 bg-gray-900 border border-gray-800 p-6 rounded-2xl shadow-xl">
+            <h2 class="text-lg font-semibold mb-4 text-white">Yeni Klip Ekle</h2>
+            <form id="uploadForm" onsubmit="uploadClip(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Klip Başlığı</label>
+                    <input type="text" id="titleInput" required class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-gray-600 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Video URL (Streamable vb.)</label>
+                    <input type="url" id="videoUrlInput" required class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-gray-600 text-sm">
+                </div>
+
+                <!-- Clip İndirme -->
+                <div class="border-t border-gray-800 pt-4">
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Clip İndirme</label>
+                    <div class="flex gap-2">
+                        <input type="url" id="downloadUrlInput" placeholder="Video linkini yapıştır"
+                            class="flex-1 min-w-0 bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-gray-600 text-sm">
+                        <button type="button" id="downloadBtn" onclick="downloadVideo()"
+                            class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 rounded-lg transition">
+                            İndir
+                        </button>
+                    </div>
+                    <p id="downloadStatus" class="text-xs text-gray-500 mt-2"></p>
+                </div>
+
+                <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-medium py-2.5 rounded-lg text-sm transition">
+                    Klipi Yükle
+                </button>
+            </form>
+        </div>
+
+        <!-- Klip Listesi -->
+        <div id="clipsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"></div>
+    </main>
+
+    <footer class="border-t border-gray-800 py-6 text-center text-xs text-gray-500">
+        FREE-CLIPS &copy; 2026
+    </footer>
+
+    <script>
+        // Supabase Bağlantı Bilgileri
+        const SUPABASE_URL = 'https://yintuewhjzcbygcjdqyy.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpbnR1ZXdoanpjYnlnY2pkcXl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4ODkyNDksImV4cCI6MjEwODQ2NTI0OX0.kZOFUF_V7tq__GX-lDBa1ZEVKhhro5QqtUOSecWjbzQ';
+
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let isAdmin = false;
+
+        // Kendi cobalt sunucun varsa buraya yaz (örn: 'https://cobalt.siten.com'). Yoksa boş bırak.
+        const COBALT_API = '';
+
+        function esc(s) {
+            return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        function setAdminUI(on) {
+            isAdmin = on;
+            document.getElementById('adminPanel').classList.toggle('hidden', !on);
+            document.getElementById('adminBtn').textContent = on ? 'Çıkış Yap' : 'Yönetici Girişi';
+        }
+
+        // Sayfa açıldığında: açık oturum varsa yönetici modunu aç, klipleri yükle
+        window.addEventListener('DOMContentLoaded', async () => {
+            const { data } = await supabaseClient.auth.getSession();
+            if (data && data.session) setAdminUI(true);
+            fetchClips();
+        });
+
+        // Yönetici Girişi / Çıkışı (şifre kodda tutulmaz, Supabase doğrular)
+        async function handleAdminClick() {
+            if (!isAdmin) {
+                const email = prompt("E-posta:");
+                if (!email) return;
+                const password = prompt("Şifre:");
+                if (!password) return;
+
+                const { error } = await supabaseClient.auth.signInWithPassword({ email: email.trim(), password });
+                if (error) { alert("Giriş başarısız!"); return; }
+                setAdminUI(true);
+            } else {
+                await supabaseClient.auth.signOut();
+                setAdminUI(false);
+            }
+            fetchClips();
+        }
+
+        // Klipleri Veritabanından Çekme
+        async function fetchClips() {
+            const grid = document.getElementById('clipsGrid');
+            grid.innerHTML = '<p class="text-gray-500 text-sm col-span-full text-center py-10">Klipler yükleniyor...</p>';
+
+            const { data, error } = await supabaseClient
+                .from('clips')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error("Klipler çekilemedi:", error);
+                grid.innerHTML = '<p class="text-red-400 text-sm col-span-full text-center py-10">Klipler yüklenirken bir hata oluştu.<br><span class="text-xs text-red-300">' + esc(error.message || 'Bilinmeyen hata') + (error.code ? ' (' + esc(error.code) + ')' : '') + '</span></p>';
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                grid.innerHTML = '<p class="text-gray-500 text-sm col-span-full text-center py-10">Henüz hiç klip eklenmemiş.</p>';
+                return;
+            }
+
+            grid.innerHTML = '';
+            data.forEach(clip => {
+                const card = document.createElement('div');
+                card.className = 'bg-gray-900 border border-gray-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between space-y-4';
+
+                card.innerHTML = `
+                    <div>
+                        <h3 class="text-base font-semibold text-white mb-2">${esc(clip.title)}</h3>
+                        <a href="${esc(clip.video_url)}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-400 hover:text-blue-300 break-all underline flex items-center gap-1.5">
+                            🔗 Videoyu Görüntüle / İndir
+                        </a>
+                    </div>
+                    <div class="flex items-center justify-end pt-2 border-t border-gray-800/60">
+                        ${isAdmin ? `<button onclick="deleteClip('${esc(clip.id)}')" class="text-xs bg-red-950/50 hover:bg-red-900 text-red-300 border border-red-900/50 px-3 py-1 rounded-lg transition">Sil</button>` : ''}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Yeni Klip Yükleme
+        async function uploadClip(e) {
+            e.preventDefault();
+
+            const title = document.getElementById('titleInput').value.trim();
+            const video_url = document.getElementById('videoUrlInput').value.trim();
+            const id = 'clip_' + Date.now();
+
+            const { error } = await supabaseClient
+                .from('clips')
+                .insert([{ id, title, video_url }]);
+
+            if (error) {
+                alert("Yükleme hatası: " + error.message);
+                return;
+            }
+
+            alert("Klip başarıyla yüklendi!");
+            document.getElementById('uploadForm').reset();
+            fetchClips();
+        }
+
+        // Klip Silme (Yönetici Özel)
+        async function deleteClip(id) {
+            if (!confirm("Bu klipi silmek istediğine emin misin?")) return;
+
+            const { error } = await supabaseClient
+                .from('clips')
+                .delete()
+                .eq('id', id);
+
+            if (error) {
+                alert("Silme hatası: " + error.message);
+                return;
+            }
+
+            alert("Klip silindi.");
+            fetchClips();
+        }
+
+        // ---- Clip İndirme ----
+        async function resolveVideoUrl(url) {
+            // 1) Doğrudan video dosyası
+            if (/\.(mp4|webm|mov|m4v)(\?.*)?$/i.test(url)) return url;
+
+            // 2) Streamable
+            const m = url.match(/streamable\.com\/(?:[a-z]\/)?([a-z0-9]+)/i);
+            if (m) {
+                const r = await fetch('https://api.streamable.com/videos/' + m[1]);
+                if (r.ok) {
+                    const d = await r.json();
+                    const f = d.files?.mp4 || d.files?.['mp4-mobile'];
+                    if (f?.url) return f.url.startsWith('//') ? 'https:' + f.url : f.url;
+                }
+            }
+
+            // 3) Diğer siteler için cobalt
+            if (COBALT_API) {
+                const r = await fetch(COBALT_API, {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+                const d = await r.json();
+                if (d.url) return d.url;
+            }
+
+            throw new Error('Bu linkten video bulunamadı.');
+        }
+
+        async function downloadVideo() {
+            const url = document.getElementById('downloadUrlInput').value.trim();
+            const status = document.getElementById('downloadStatus');
+            const btn = document.getElementById('downloadBtn');
+            if (!url) { status.textContent = 'Önce bir link yapıştır.'; return; }
+
+            btn.disabled = true;
+            status.textContent = 'Video aranıyor...';
+
+            try {
+                const videoUrl = await resolveVideoUrl(url);
+                status.textContent = 'İndiriliyor...';
+                try {
+                    const blob = await (await fetch(videoUrl)).blob();
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'clip_' + Date.now() + '.mp4';
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                    status.textContent = 'İndirme başladı ✅';
+                } catch {
+                    window.open(videoUrl, '_blank');
+                    status.textContent = 'Video yeni sekmede açıldı, oradan kaydedebilirsin.';
+                }
+            } catch (err) {
+                status.textContent = '❌ ' + err.message;
+            }
+            btn.disabled = false;
+        }
+    </script>
+</body>
+</html>
